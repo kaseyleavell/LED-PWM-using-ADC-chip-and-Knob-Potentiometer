@@ -7,6 +7,10 @@
 #define INTERVAL 50000
 /**
  * main.c
+ * Using TI MSP430G2553 as master
+ * Create a variable brightness LED with an External ADC reading the value of a knob potentiometer
+ * The ADC chip is an MCP3008 which is polled via SPI
+ * There is a button that when pushed will block all other code until it is pressed again
  */
 //struct for ADC
 struct analog{
@@ -46,6 +50,8 @@ int main(void)
 	P1IES |= BUTTON; // P1.4 Hi/lo edge
 	P1IFG &= ~BUTTON; // P1.4 IFG cleared
 	//initialize the ADC
+	//Didn't need the MSP430 ADC after the external chip was implimented.
+	//Code is left in for reference
 	/*ADC10CTL0 &=~ ENC;              //must disable ADC to change settings.
 	ADC10CTL0  = ADC10ON +ADC10IE; // Vref Vr+=3v,Vr-=VSS,
 	ADC10CTL1  = ADC10DIV_7+ INCH_3; // INCH =0000->A0,ADCCLK src = ADC10CLK,
@@ -58,10 +64,11 @@ int main(void)
 	return 0;
 }
 //Timer A0 service routine
+//At an increment determined by the function Macro "INTERVAL" This timer interrupt fires and polls the ADC
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void TIMER0_A(void){
     TACCR0 = 0;     //unenabling the timer interrupt vector
-    int temp = ReadADC(module);
+    int temp = ReadADC(module);	//see "MCP3008.h" for the code regarding that chip
     //Only call this function if the button has been pressed
     if((!buttonFlag) && (count>temp)){
         LEDWrapper();   //xor the led
@@ -78,6 +85,7 @@ __interrupt void TIMER0_A(void){
  * doesn't work exactly every time
  */
 //port 1 vector routine
+//Button interrupt
 #pragma vector = PORT1_VECTOR
 __interrupt void PORT_1(void){
     P1IE &=~BUTTON;
