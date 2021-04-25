@@ -11,23 +11,25 @@
 //0x11 is 5 beginning bits that should be clocked off the the LSB side of the BYTE
 //0x01 is the Start bit
 char STRTSeq = 0x03;
-//this struct is used for ease of changing pinouts throughout the code.
+//this struct is used for ease of changing pinouts throughout the code. See the top of main.c
 struct SPIModule{
     char SCLKPin;
     char SDOPin;
     char SDIPin;
     char CSPin;
 };
-//could include channel selection in this
+//could add channel selection as an additional function parameter
+//currently this initializes the chip to read channel 0 with reference to AGND (pin on chip)
 void initializeCh(struct SPIModule mod){
     int i = 0;
-    //make sure chip is selected corrctley
+    //Pulse chip select to assure chip is starting configuration process.
+    //Must happen before every pin read
     P2OUT|= mod.CSPin;
     P2OUT &=~ mod.CSPin;
     //send configuration information to the data input pin
     for(i = 0;i<5;i++){
         P2OUT &=~ mod.SCLKPin;
-        //compare the LSB of the sequence to
+        //compare the LSB of the sequence to 0x01 and bring SDI high if it is high
         if((STRTSeq>>i) & 0x01){
             P2OUT |= mod.SDIPin;
         } else {
@@ -42,6 +44,7 @@ void initializeCh(struct SPIModule mod){
     //returning to the read function on the null bit
     return;
 }
+//This function wasn't necessarily useful with this specific device peripheral
 /*int test(int channel, struct SPIModule mod){
     //clock off some garbage data to make sure device is working properly
     if(/*condition: test succeeded){
@@ -56,7 +59,7 @@ int ReadADC(struct SPIModule mod){
     int value;
     int i = 0;
 
-    //send channel info to the MCP4008
+    //send channel configuration info to the MCP3008
     initializeCh(mod);
     //raise serial clock from 0 to 1 the next falling edge will clock off the MSB.
     P2OUT |= mod.SCLKPin;
